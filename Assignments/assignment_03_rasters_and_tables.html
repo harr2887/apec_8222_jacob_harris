@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Assignment 03: Rasters and Tables</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="assignment_03_rasters_and_tables_files/libs/clipboard/clipboard.min.js"></script>
+<script src="assignment_03_rasters_and_tables_files/libs/quarto-html/quarto.js"></script>
+<script src="assignment_03_rasters_and_tables_files/libs/quarto-html/popper.min.js"></script>
+<script src="assignment_03_rasters_and_tables_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="assignment_03_rasters_and_tables_files/libs/quarto-html/anchor.min.js"></script>
+<link href="assignment_03_rasters_and_tables_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="assignment_03_rasters_and_tables_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="assignment_03_rasters_and_tables_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="assignment_03_rasters_and_tables_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="assignment_03_rasters_and_tables_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Assignment 03: Rasters and Tables</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>For this assignment, you will be using Numpy, GDAL, and Pandas. Most of these questions can be solved using methods shown in lecture. However, some cases will require you to search the internet for answers. This is intended because efficiently searching documentation or Stackoverflow is a requirement of modern programing. This assignment also requires you to obtain data (I will tell you where) and organize it correctly so that you can access is via relative paths (do not use absolute paths anywhere in this assignment).</p>
+<p>To turn this in, create a PDF of your finished Jupyter notebook using Quarto (we will discuss this on Tuesday) and upload it to Canvas.</p>
+<section id="question-1" class="level2">
+<h2 class="anchored" data-anchor-id="question-1">Question 1</h2>
+<p>For this question, you will be using numpy to manipulate arrays in a way that works well for big data and will be using spatial tools to assess land-use change. Specifically, you will use data from a global, 300m resolution land-use, land-cover (LULC) map produced by ESACCI. They provide a wonderful time series of data from 1992-2019. If you want more information, check out their web viewer at https://maps.elie.ucl.ac.be/CCI/viewer/. Here you can view the data but also learn more about the classification regressions that uses time-series spectral data patterns to classify grid-cells into different types. I have extracted lulc maps for the country of Rwanda, which you will find in this assignment’s data folder.</p>
+<section id="part-a." class="level3">
+<h3 class="anchored" data-anchor-id="part-a.">Part a.</h3>
+<p>Using the gdal package and the gdal.Open() function, open up the land-use, land-cover map for Rwanda in 2000.</p>
+<p>In this file, there is only 1 band in this file, so you can also access it with the GetRasterBand(1) function. Without reading the whole array, show how you can determine how many total grid-cells there are in this country.</p>
+<div class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> osgeo <span class="im">import</span> gdal</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> zipfile</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1A Answer</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>lulc_filename <span class="op">=</span> <span class="st">'rwanda_lulc_2000.tif'</span> <span class="co"># Rwanda 2000 LULC file</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>data_directory <span class="op">=</span> <span class="st">'../../../../data'</span> <span class="co"># Directory containing the file</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>lulc_file_path <span class="op">=</span> os.path.join(data_directory, lulc_filename)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if the file exists</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Does the file exist?"</span>, os.path.exists(lulc_file_path))</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>rwanda_2000_data <span class="op">=</span> gdal.Open(lulc_file_path) <span class="co"># Open dataset</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>rwanda_2000_band <span class="op">=</span> rwanda_2000_data.GetRasterBand(<span class="dv">1</span>) <span class="co"># Save band 1 of the raster</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at band as double check</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(rwanda_2000_band)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Does the file exist? True
+&lt;osgeo.gdal.Band; proxy of &lt;Swig Object of type 'GDALRasterBandShadow *' at 0x000002711A45B240&gt; &gt;</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="please-ignore-the-cell-below" class="level2">
+<h2 class="anchored" data-anchor-id="please-ignore-the-cell-below">Please ignore the cell below</h2>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define function that takes in a TIFF and returns band 1 of its raster</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">'''</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">def get_tif_band(tif_file):</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">    data_directory = '../../../../data' # Directory containing the file</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">    tif_file_path = os.path.join(data_directory, tif_file)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">    # Check if the file exists</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">    print("Does the file exist?", os.path.exists(tif_file_path))</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">    raster_data = gdal.Open(tif_file_path) # Open dataset</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">    raster_band = raster_data.GetRasterBand(1) # Save band 1 of the raster</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">    print('Raster band 1 successfully retrieved')</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">    return raster_band # Return the band</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">print(rwanda_2000_band1)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">'''</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>'\ndef get_tif_band(tif_file):\n    data_directory = \'../../../../data\' # Directory containing the file\n    tif_file_path = os.path.join(data_directory, tif_file)\n\n    # Check if the file exists\n    print("Does the file exist?", os.path.exists(tif_file_path))\n\n    raster_data = gdal.Open(tif_file_path) # Open dataset\n\n    raster_band = raster_data.GetRasterBand(1) # Save band 1 of the raster\n\n    print(\'Raster band 1 successfully retrieved\')\n\n    return raster_band # Return the band\n\nprint(rwanda_2000_band1)\n'</code></pre>
+</div>
+</div>
+<section id="part-b." class="level3">
+<h3 class="anchored" data-anchor-id="part-b.">Part b.</h3>
+<p>Using the results of part a, read the whole array into memory as a numpy array (the default option when using the ReadAsArray() funciton), and plot it using the matplotlib imshow command. Add a nice title to the plot describing what it is.</p>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#1B Answer</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Get array from raster band</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>rwanda_array <span class="op">=</span> rwanda_2000_band.ReadAsArray()</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># rwanda_array # Look at array</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot raster </span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>plt.imshow(rwanda_array)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Rwanda Land-use, Land-cover in the Year 2000'</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>plt.colorbar(orientation<span class="op">=</span><span class="st">'horizontal'</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Show output</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>plt.show() </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="assignment_03_rasters_and_tables_files/figure-html/cell-5-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+<section id="part-c." class="level3">
+<h3 class="anchored" data-anchor-id="part-c.">Part c.</h3>
+<p>Using the legend you find at https://maps.elie.ucl.ac.be/CCI/viewer/download/ESACCI-LC-QuickUserGuide-LC-Maps_v2-0-7.pdf reclassify the LULC into a simplified map where 1 = cropland (including any mosaic types that are partially cropland) and 0 = anything else. Plot this using imshow.</p>
+<div class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1C Answer</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define function to mask non-cropland in the array</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reclassify_lulc(array, reclass_vals):</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    masked_lulc <span class="op">=</span> np.isin(array, reclass_vals)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    new_classify <span class="op">=</span> np.where(masked_lulc, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> new_classify</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>cropland_vals <span class="op">=</span> [<span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">40</span>]</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>reclass_array <span class="op">=</span> reclassify_lulc(rwanda_array, cropland_vals)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(reclass_array)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot raster </span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>plt.imshow(reclass_array)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Rwanda Cropland in the Year 2000'</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>plt.colorbar(orientation<span class="op">=</span><span class="st">'horizontal'</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Show output</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>plt.show() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ ...
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]]</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="assignment_03_rasters_and_tables_files/figure-html/cell-6-output-2.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+<section id="part-d." class="level3">
+<h3 class="anchored" data-anchor-id="part-d.">Part d.</h3>
+<p>Repeat the process for the 2010 LULC map. Using this array with the one from part c, create a new array that records where there was cropland expansion (i.e., there is cropland in 2010 but not in 2000) and where there was cropland abandonment (cropland in 2000 but not in 2010). Save this classification in a single new array. Plot this last array. Optionally, add a legend indicating which values in the array denote expansion and abandonment using some variant of `ax.legend()’.</p>
+<div class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2D Answer</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>lulc_filename <span class="op">=</span> <span class="st">'rwanda_lulc_2010.tif'</span> <span class="co"># Rwanda 2000 LULC file</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>data_directory <span class="op">=</span> <span class="st">'../../../../data'</span> <span class="co"># Directory containing the file</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>lulc_file_path <span class="op">=</span> os.path.join(data_directory, lulc_filename)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if the file exists</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Does the file exist?"</span>, os.path.exists(lulc_file_path))</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>rwanda_2010_data <span class="op">=</span> gdal.Open(lulc_file_path) <span class="co"># Open dataset</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>rwanda_2010_band <span class="op">=</span> rwanda_2010_data.GetRasterBand(<span class="dv">1</span>) <span class="co"># Save band 1 of the raster</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at band as double check</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(rwanda_2010_band)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Does the file exist? True
+&lt;osgeo.gdal.Band; proxy of &lt;Swig Object of type 'GDALRasterBandShadow *' at 0x000002711CFC6CD0&gt; &gt;</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2D Continued</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Get array from raster band</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>rwanda_array_2010 <span class="op">=</span> rwanda_2010_band.ReadAsArray()</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># rwanda_array_2010 # Look at array</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Call reclass function for 2010 array</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>reclass_array_2010 <span class="op">=</span> reclassify_lulc(rwanda_array_2010, cropland_vals)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># print(reclass_array_2010)</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot raster </span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>plt.imshow(reclass_array_2010)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Rwanda Cropland in the Year 2000'</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>plt.colorbar(orientation<span class="op">=</span><span class="st">'horizontal'</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Show output</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>plt.show() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="assignment_03_rasters_and_tables_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<div class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2D Continued</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Expansion: if cropland in 2010 but not 2000</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>crop_expansion <span class="op">=</span> reclass_array_2010 <span class="op">-</span> reclass_array</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>crop_expansion <span class="op">=</span> np.where(crop_expansion <span class="op">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Abandonment: if cropland in 2010 but not 2010</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>crop_abandonment <span class="op">=</span> reclass_array <span class="op">-</span> reclass_array_2010</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>crop_abandonment <span class="op">=</span> np.where(crop_abandonment <span class="op">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="part-e." class="level3">
+<h3 class="anchored" data-anchor-id="part-e.">Part e.</h3>
+<p>Repeat the all the steps in part d, but with the 2015 LULC map, calculating the difference between 2015 and 2010.</p>
+<div class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2E Answer</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>lulc_filename <span class="op">=</span> <span class="st">'rwanda_lulc_2015.tif'</span> <span class="co"># Rwanda 2000 LULC file</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>data_directory <span class="op">=</span> <span class="st">'../../../../data'</span> <span class="co"># Directory containing the file</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>lulc_file_path <span class="op">=</span> os.path.join(data_directory, lulc_filename)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if the file exists</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Does the file exist?"</span>, os.path.exists(lulc_file_path))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>rwanda_2015_data <span class="op">=</span> gdal.Open(lulc_file_path) <span class="co"># Open dataset</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>rwanda_2015_band <span class="op">=</span> rwanda_2015_data.GetRasterBand(<span class="dv">1</span>) <span class="co"># Save band 1 of the raster</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at band as double check</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(rwanda_2015_band)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>rwanda_array_2015 <span class="op">=</span> rwanda_2015_band.ReadAsArray()</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>reclass_array_2015 <span class="op">=</span> reclassify_lulc(rwanda_array_2015, cropland_vals)</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(reclass_array_2015)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Does the file exist? True
+&lt;osgeo.gdal.Band; proxy of &lt;Swig Object of type 'GDALRasterBandShadow *' at 0x000002711D8ACC30&gt; &gt;
+[[0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ ...
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2E Continued</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Expansion: if cropland in 2015 but not 2010</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>crop_expansion_2015 <span class="op">=</span> reclass_array_2015 <span class="op">-</span> reclass_array_2010</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>crop_expansion_2015 <span class="op">=</span> np.where(crop_expansion <span class="op">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Abandonment: if cropland in 2010 but not 2015</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>crop_abandonment_2015 <span class="op">=</span> reclass_array_2010 <span class="op">-</span> reclass_array_2015</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>crop_abandonment_2015 <span class="op">=</span> np.where(crop_abandonment <span class="op">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="part-f." class="level3">
+<h3 class="anchored" data-anchor-id="part-f.">Part f.</h3>
+<p>Use the two cropland binary rasters you processed above and make a new raster as follows:</p>
+<p>0 = Never cropland 1 = Cropland in 2000 only 2 = Cropland in 2010 only 3 = Cropland in 2015 only 4 = Cropland in 2000 and 2010 5 = Cropland in 2000 and 2015 6 = Cropland in 2010 and 2015 7 = Cropland in 2000, 2010, and 2015</p>
+<p>Plot this raster using imshow. Add a legend indicating what each value means.</p>
+<p>A tip for you: when you are combining multiple logical statements in numpy, each individual logical statement must be surrounded by parentheses. Additionally, you have to use the bitwise logical operators &amp; and | instead of the normal logical operators and and or (numpy requires this for specificity).</p>
+<p>For example, np.where((a == 1) &amp; (b == 2)) will return the indices where a is 1 and b is 2. If you do np.where(a == 1 &amp; b == 2) or np.where((a == 1) and (b == 2)), you will get an error.</p>
+<div class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">#2F Answer</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize the criteria for the new array</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>logic_0 <span class="op">=</span> ((reclass_array <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (reclass_array_2010 <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (reclass_array_2015 <span class="op">==</span> <span class="dv">0</span>))</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>logic_1 <span class="op">=</span> ((crop_abandonment <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (reclass_array_2015 <span class="op">==</span> <span class="dv">0</span>))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>logic_2 <span class="op">=</span> ((crop_expansion <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (crop_abandonment_2015 <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>logic_3 <span class="op">=</span> ((crop_expansion_2015 <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (reclass_array <span class="op">==</span> <span class="dv">0</span>))</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>logic_4 <span class="op">=</span> ((reclass_array <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (crop_abandonment_2015 <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>logic_5 <span class="op">=</span> ((crop_abandonment <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (crop_expansion_2015 <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>logic_6 <span class="op">=</span> ((crop_expansion <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (reclass_array_2015 <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize empty list</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>values <span class="op">=</span> [] </span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Append values for each corresponding criteria</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>,<span class="dv">7</span>): </span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    values.append(i)</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[0, 1, 2, 3, 4, 5, 6]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>new_array <span class="op">=</span> np.where(logic_0, <span class="dv">0</span>, </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                np.where(logic_1, <span class="dv">1</span>, </span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                np.where(logic_2, <span class="dv">2</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                np.where(logic_3, <span class="dv">3</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                np.where(logic_4, <span class="dv">4</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                np.where(logic_5, <span class="dv">5</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                np.where(logic_6, <span class="dv">6</span>, <span class="dv">7</span>))))))</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(new_array)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ ...
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">#2F Continued</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>crop_array <span class="op">=</span> np.select([logic_0, logic_1, logic_2, logic_3, logic_4, logic_5, logic_6], values, <span class="dv">7</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># crop_array = np.where([logic_0, logic_1, logic_2, logic_3, logic_4, logic_5, logic_6], values, 7)</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(crop_array)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ ...
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot raster </span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>plt.imshow(new_array)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Rwanda Cropland in the Years 2000, 2010, and 2015'</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>plt.colorbar(orientation<span class="op">=</span><span class="st">'horizontal'</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Show output</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>plt.show() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="assignment_03_rasters_and_tables_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<div class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use numpy.unique to get unique values and their counts</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>unique_values, counts <span class="op">=</span> np.unique(new_array, return_counts<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(unique_values, <span class="st">'</span><span class="ch">\n</span><span class="st">'</span>, counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[0 1 3 6 7] 
+ [403348   1299    125  61359    153]</code></pre>
+</div>
+</div>
+</section>
+<section id="part-g." class="level3">
+<h3 class="anchored" data-anchor-id="part-g.">Part g.</h3>
+<p>Describe your results. What do you notice about the spatial patterns of cropland expansion and abandonment? What do you think might be driving these patterns? Were they clustered in any specific area? Were the changes the same between 2000-2010 and 2010-2015?</p>
+<section id="answer-g" class="level4">
+<h4 class="anchored" data-anchor-id="answer-g">Answer G</h4>
+<p>Generally, it looks like cropland is mostly expanding. There are more classification values of 6 than 1 which means more cropland in 2010 and 2015 only compared to just 2000. The expansion is most prominent in the northeast and central south regions of the country. Also, it appears that there is more expansion from 2010 to 2015 versus 2000 to 2010.</p>
+</section>
+</section>
+</section>
+<section id="question-2" class="level2">
+<h2 class="anchored" data-anchor-id="question-2">Question 2</h2>
+<p>For this question, you will analyze crops using two datasets:</p>
+<ol type="1">
+<li>FAOSTAT Production_Crops_E_All_Data_(Normalized).csv. You could download it yourself but please use the one in the Class’s Data Directory.</li>
+<li>MAPSPAM (Spatial Production Allocation Mode). You can find teh download listing here: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PRFF8V Download the readme and all of the files that end with .geotiff.zip. Unzip them and put them in a folder called spam in your Class’s Data Directory. This is a big download, so it may take a while. Go watch a show or something. I don’t know, what do people do nowadays for fun?3.</li>
+</ol>
+<p>Sidenote: MAPSPAM was a competitor to the EARTHSTAT data we showed in class before. However, MAPSPAM continues to be updated and is more open-source, so I am in the process of switching my whole GTAP-InVEST model to it.</p>
+<p>You will choose 5 crops that interest you, making sure to select crops that are in both MAPSPAM and FAOSTAT dataset. You will want to refer to the ReadMe_v2r0_Global.txt file, which was available at the same download site for MAPSPAM, to identify what each of the different crops mean. For each crop you choose (use a loop), calculate the global sum of production tonnage for irrigated crops, all rainfed crops combined but excluding subsistence crops, and for all crops together. Report those values via print().</p>
+<p>Next, for the same crops, compare how the value you calculated above compares to the value in the FAOSTAT dataset. To do this, you will need to use Pandas to load the CSV and then figure out how to get just the production tonnage values for the crops you are interested in. Interpret your results for your crops. Is FAO higher/lower than MAPSPAM? Do you notice any patterns to the difference?</p>
+</section>
+<section id="load-faostat-data" class="level2">
+<h2 class="anchored" data-anchor-id="load-faostat-data">Load FAOSTAT Data</h2>
+<div class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Question 2 answer</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Path to data directory</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>data_directory <span class="op">=</span> <span class="st">'../../../../data'</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># File name of ZIP file</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>zip_filename <span class="op">=</span> <span class="st">'Production_Crops_E_All_Data_(Normalized).zip'</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>zip_path <span class="op">=</span> os.path.join(data_directory, zip_filename)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Name of CSV file</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="co"># crop_production_filename = 'Production_Crops_E_All_Data_(Normalized).csv'</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the CSV file from the ZIP archive</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> zipfile.ZipFile(zip_path, <span class="st">'r'</span>) <span class="im">as</span> zip_ref:</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assuming there is only one CSV file in the ZIP, if there are multiple, adjust accordingly</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    csv_file_name <span class="op">=</span> zip_ref.namelist()[<span class="dv">0</span>]</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>    zip_ref.extract(csv_file_name, path <span class="op">=</span> data_directory)  <span class="co"># You can specify the extraction directory</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="36">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read the CSV file using pandas</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>csv_path <span class="op">=</span> os.path.join(data_directory, csv_file_name)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>crop_production <span class="op">=</span> pd.read_csv(csv_path, encoding <span class="op">=</span> <span class="st">'latin-1'</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the Pandas DataFrame</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(crop_production.head())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Area Code         Area  Item Code                 Item  Element Code         Element  Year Code  Year Unit   Value Flag
+0          2  Afghanistan        221  Almonds, with shell          5312  Area harvested       1975  1975   ha     0.0    F
+1          2  Afghanistan        221  Almonds, with shell          5312  Area harvested       1976  1976   ha  5900.0    F
+2          2  Afghanistan        221  Almonds, with shell          5312  Area harvested       1977  1977   ha  6000.0    F
+3          2  Afghanistan        221  Almonds, with shell          5312  Area harvested       1978  1978   ha  6000.0    F
+4          2  Afghanistan        221  Almonds, with shell          5312  Area harvested       1979  1979   ha  6000.0    F</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the different crop options</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>crop_production[<span class="st">'Item'</span>].unique()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre><code>array(['Almonds, with shell', 'Anise, badian, fennel, coriander',
+       'Apples', 'Apricots', 'Barley', 'Berries nes', 'Figs',
+       'Fruit, citrus nes', 'Fruit, fresh nes', 'Fruit, stone nes',
+       'Grapes', 'Linseed', 'Maize', 'Melons, other (inc.cantaloupes)',
+       'Millet', 'Nuts nes', 'Olives', 'Onions, dry', 'Oranges',
+       'Peaches and nectarines', 'Pears', 'Pistachios', 'Plums and sloes',
+       'Potatoes', 'Pulses nes', 'Rice, paddy',
+       'Rice, paddy (rice milled equivalent)', 'Seed cotton',
+       'Sesame seed', 'Spices nes', 'Sugar beet', 'Sugar cane',
+       'Sunflower seed', 'Vegetables, fresh nes', 'Walnuts, with shell',
+       'Watermelons', 'Wheat', 'Cereals, Total', 'Citrus Fruit, Total',
+       'Fibre Crops Primary', 'Fruit Primary', 'Oilcrops',
+       'Oilcrops, Cake Equivalent', 'Oilcrops, Oil Equivalent',
+       'Pulses, Total', 'Roots and Tubers, Total', 'Sugar Crops Primary',
+       'Treenuts, Total', 'Vegetables Primary', 'Beans, dry',
+       'Beans, green', 'Broad beans, horse beans, dry',
+       'Cabbages and other brassicas', 'Carrots and turnips',
+       'Cauliflowers and broccoli', 'Cherries', 'Cherries, sour',
+       'Chestnut', 'Chillies and peppers, green',
+       'Cucumbers and gherkins', 'Dates', 'Eggplants (aubergines)',
+       'Garlic', 'Hops', 'Leeks, other alliaceous vegetables',
+       'Lemons and limes', 'Lettuce and chicory',
+       'Mushrooms and truffles', 'Oats', 'Okra',
+       'Onions, shallots, green', 'Peas, green',
+       'Pumpkins, squash and gourds', 'Quinces', 'Rye', 'Sorghum',
+       'Soybeans', 'Spinach', 'Strawberries',
+       'Tangerines, mandarins, clementines, satsumas',
+       'Tobacco, unmanufactured', 'Tomatoes',
+       'Vegetables, leguminous nes', 'Vetches', 'Artichokes', 'Bananas',
+       'Carobs', 'Chick peas', 'Chillies and peppers, dry',
+       'Fruit, tropical fresh nes', 'Grapefruit (inc. pomelos)',
+       'Groundnuts, with shell', 'Lentils', 'Peas, dry', 'Rapeseed',
+       'Triticale', 'Cassava', 'Cocoa, beans', 'Coconuts', 'Maize, green',
+       'Pineapples', 'Taro (cocoyam)', 'Yams', 'Bastfibres, other',
+       'Cashew nuts, with shell', 'Castor oil seed', 'Coffee, green',
+       'Flax fibre and tow', 'Oil palm fruit', 'Sisal', 'Sweet potatoes',
+       'Mangoes, mangosteens, guavas', 'Asparagus', 'Avocados',
+       'Canary seed', 'Cereals nes', 'Fibre crops nes', 'Lupins', 'Maté',
+       'Oilseeds nes', 'Papayas', 'Peppermint', 'Safflower seed',
+       'String beans', 'Tea', 'Tung nuts', 'Hazelnuts, with shell',
+       'Blueberries', 'Cow peas, dry', 'Currants', 'Kiwi fruit',
+       'Mustard seed', 'Persimmons', 'Raspberries', 'Buckwheat',
+       'Gooseberries', 'Grain, mixed', 'Hemp tow waste', 'Poppy seed',
+       'Cranberries', 'Pigeon peas', 'Plantains and others', 'Areca nuts',
+       'Coir', 'Ginger', 'Jute', 'Rubber, natural', 'Sugar crops nes',
+       'Fruit, pome nes', 'Chicory roots', 'Vanilla',
+       'Roots and tubers nes', 'Yautia (cocoyam)', 'Fonio',
+       'Karite nuts (sheanuts)', 'Kola nuts', 'Melonseed',
+       'Pepper (piper spp.)', 'Nutmeg, mace and cardamoms',
+       'Brazil nuts, with shell', 'Pyrethrum, dried', 'Quinoa',
+       'Cashewapple', 'Gums, natural', 'Ramie', 'Cassava leaves',
+       'Hempseed', 'Bambara beans', 'Cinnamon (cannella)', 'Cloves',
+       'Tallowtree seed', 'Agave fibres nes', 'Manila fibre (abaca)',
+       'Kapok fruit', 'Jojoba seed'], dtype=object)</code></pre>
+</div>
+</div>
+</section>
+<section id="mapspam-crop-production-summations" class="level2">
+<h2 class="anchored" data-anchor-id="mapspam-crop-production-summations">MAPSPAM Crop Production Summations</h2>
+<div class="cell" data-execution_count="46">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function for picking out files in the SPAM folder</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> search_files (directory, crop_name):</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initialize dictionary for containing geotiff filenames and their data</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    spam_data <span class="op">=</span> {}</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Iterate through all files in the specified directory</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> filename <span class="kw">in</span> os.listdir(directory):</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> crop_name <span class="kw">in</span> filename:</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>            file_path <span class="op">=</span> os.path.join(directory, filename)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>            dataset <span class="op">=</span> gdal.Open(file_path) <span class="co"># Open file using GDAL</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>            spam_band <span class="op">=</span> dataset.GetRasterBand(<span class="dv">1</span>)</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>            spam_array <span class="op">=</span> spam_band.ReadAsArray()</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>            <span class="co"># spam_data.append((filename, spam_array)) # Append that file to the data list</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>            spam_data[filename] <span class="op">=</span> spam_array <span class="co"># Add to dictionary</span></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> spam_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params for search files function</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>spam_directory <span class="op">=</span> os.path.join(data_directory, <span class="st">'spam'</span>)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 5 crops also in MAPSPAM data (info found in ReadMe): </span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 1: wheat (whea)</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>wheat_files <span class="op">=</span> search_files(spam_directory, <span class="st">'WHEA'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(wheat_files))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>24</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="47">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params for search files function</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>spam_directory <span class="op">=</span> os.path.join(data_directory, <span class="st">'spam'</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 5 crops also in MAPSPAM data (info found in ReadMe): </span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 1: wheat (whea)</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>wheat_files <span class="op">=</span> search_files(spam_directory, <span class="st">'WHEA'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(wheat_files))</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 2: maize (maiz)</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>maize_files <span class="op">=</span> search_files(spam_directory, <span class="st">'MAIZ'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(maize_files))</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 3: barley (barl)</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>barley_files <span class="op">=</span> search_files(spam_directory, <span class="st">'BARL'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(barley_files))</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 4: potato (pota)</span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>potato_files <span class="op">=</span> search_files(spam_directory, <span class="st">'POTA'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(potato_files))</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a><span class="co"># crop 5: cotton (cott)</span></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>cotton_files <span class="op">=</span> search_files(spam_directory, <span class="st">'COTT'</span>) <span class="co"># Call search files function for wheat</span></span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(cotton_files))</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>24
+24
+24
+24
+24</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="51">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the keys in one of the dictionaries</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>wheat_files.keys()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="51">
+<pre><code>dict_keys(['spam2010V2r0_global_P_WHEA_H.tif', 'spam2010V2r0_global_P_WHEA_I.tif', 'spam2010V2r0_global_H_WHEA_A.tif', 'spam2010V2r0_global_H_WHEA_S.tif', 'spam2010V2r0_global_H_WHEA_R.tif', 'spam2010V2r0_global_P_WHEA_L.tif', 'spam2010V2r0_global_Y_WHEA_A.tif', 'spam2010V2r0_global_A_WHEA_H.tif', 'spam2010V2r0_global_A_WHEA_I.tif', 'spam2010V2r0_global_A_WHEA_L.tif', 'spam2010V2r0_global_Y_WHEA_S.tif', 'spam2010V2r0_global_Y_WHEA_R.tif', 'spam2010V2r0_global_Y_WHEA_H.tif', 'spam2010V2r0_global_Y_WHEA_I.tif', 'spam2010V2r0_global_A_WHEA_A.tif', 'spam2010V2r0_global_A_WHEA_S.tif', 'spam2010V2r0_global_A_WHEA_R.tif', 'spam2010V2r0_global_Y_WHEA_L.tif', 'spam2010V2r0_global_P_WHEA_A.tif', 'spam2010V2r0_global_H_WHEA_H.tif', 'spam2010V2r0_global_H_WHEA_I.tif', 'spam2010V2r0_global_H_WHEA_L.tif', 'spam2010V2r0_global_P_WHEA_S.tif', 'spam2010V2r0_global_P_WHEA_R.tif'])</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="58">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define function for appending arrays containing a certain substring to a list</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> keys_containing(my_dict, substring, my_list):</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Iterate through dictionary</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key, value <span class="kw">in</span> my_dict.items():</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Look to see if substring is in any of the keys</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> substring <span class="kw">in</span> key:</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>            my_list.append(value) <span class="co"># Append value to list</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="71">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Irrigated crop production to list</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params before calling keys containing function</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>irrigated_crops <span class="op">=</span> [] <span class="co"># Initialize empty list</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>wheat_substr <span class="op">=</span> <span class="st">'P_WHEA_I.tif'</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>maize_substr <span class="op">=</span> <span class="st">'P_MAIZ_I.tif'</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>barley_substr <span class="op">=</span> <span class="st">'P_BARL_I.tif'</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>potato_substr <span class="op">=</span> <span class="st">'P_POTA_I.tif'</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>cotton_substr <span class="op">=</span> <span class="st">'P_COTT_I.tif'</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Call keys containing function for each crop dictionary</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>keys_containing(wheat_files, wheat_substr, irrigated_crops)</span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>keys_containing(maize_files, maize_substr, irrigated_crops)</span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>keys_containing(barley_files, barley_substr, irrigated_crops)</span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>keys_containing(potato_files, potato_substr, irrigated_crops)</span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a>keys_containing(cotton_files, cotton_substr, irrigated_crops)</span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Checking resulting array</span></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>wheat_arr <span class="op">=</span> irrigated_crops[<span class="dv">0</span>]</span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.unique(wheat_arr))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[-1.00000e+00  0.00000e+00  1.00000e-01 ...  5.57886e+04  5.58791e+04
+  6.02159e+04]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="76">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rainfed crop production to list</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params before calling keys containing function</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>rainfed_crops <span class="op">=</span> [] <span class="co"># Initialize empty list</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>wheat_substr <span class="op">=</span> <span class="st">'P_WHEA_R.tif'</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>maize_substr <span class="op">=</span> <span class="st">'P_MAIZ_R.tif'</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>barley_substr <span class="op">=</span> <span class="st">'P_BARL_R.tif'</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>potato_substr <span class="op">=</span> <span class="st">'P_POTA_R.tif'</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>cotton_substr <span class="op">=</span> <span class="st">'P_COTT_R.tif'</span></span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Call keys containing function for each crop dictionary</span></span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>keys_containing(wheat_files, wheat_substr, rainfed_crops)</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>keys_containing(maize_files, maize_substr, rainfed_crops)</span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>keys_containing(barley_files, barley_substr, rainfed_crops)</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>keys_containing(potato_files, potato_substr, rainfed_crops)</span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>keys_containing(cotton_files, cotton_substr, rainfed_crops)</span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Checking resulting array</span></span>
+<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>wheat_arr <span class="op">=</span> rainfed_crops[<span class="dv">0</span>]</span>
+<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.unique(rainfed_crops))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[-1.000000e+00  0.000000e+00  1.000000e-01 ...  1.907359e+05  2.711645e+05
+  2.913119e+05]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="77">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rainfed subsistence crop production to list</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params before calling keys containing function</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>rainfed_s_crops <span class="op">=</span> [] <span class="co"># Initialize empty list</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>wheat_substr <span class="op">=</span> <span class="st">'P_WHEA_S.tif'</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>maize_substr <span class="op">=</span> <span class="st">'P_MAIZ_S.tif'</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>barley_substr <span class="op">=</span> <span class="st">'P_BARL_S.tif'</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>potato_substr <span class="op">=</span> <span class="st">'P_POTA_S.tif'</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>cotton_substr <span class="op">=</span> <span class="st">'P_COTT_S.tif'</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Call keys containing function for each crop dictionary</span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>keys_containing(wheat_files, wheat_substr, rainfed_s_crops)</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>keys_containing(maize_files, maize_substr, rainfed_s_crops)</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>keys_containing(barley_files, barley_substr, rainfed_s_crops)</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>keys_containing(potato_files, potato_substr, rainfed_s_crops)</span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>keys_containing(cotton_files, cotton_substr, rainfed_s_crops)</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Checking resulting array</span></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>wheat_arr <span class="op">=</span> rainfed_s_crops[<span class="dv">0</span>]</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.unique(rainfed_s_crops))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[-1.000000e+00  0.000000e+00  1.000000e-01 ...  1.176400e+05  1.183305e+05
+  1.204145e+05]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="78">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Total crop production to list</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set params before calling keys containing function</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>all_crops <span class="op">=</span> [] <span class="co"># Initialize empty list</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>wheat_substr <span class="op">=</span> <span class="st">'P_WHEA_A.tif'</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>maize_substr <span class="op">=</span> <span class="st">'P_MAIZ_A.tif'</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>barley_substr <span class="op">=</span> <span class="st">'P_BARL_A.tif'</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>potato_substr <span class="op">=</span> <span class="st">'P_POTA_A.tif'</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>cotton_substr <span class="op">=</span> <span class="st">'P_COTT_A.tif'</span></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Call keys containing function for each crop dictionary</span></span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>keys_containing(wheat_files, wheat_substr, all_crops)</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>keys_containing(maize_files, maize_substr, all_crops)</span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>keys_containing(barley_files, barley_substr, all_crops)</span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>keys_containing(potato_files, potato_substr, all_crops)</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>keys_containing(cotton_files, cotton_substr, all_crops)</span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Checking resulting array</span></span>
+<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>wheat_arr <span class="op">=</span> all_crops[<span class="dv">0</span>]</span>
+<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.unique(all_crops))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[-1.000000e+00  0.000000e+00  1.000000e-01 ...  2.167289e+05  2.711645e+05
+  2.913119e+05]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="98">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute summations of crops by technology type</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>irrigation_sum_spam <span class="op">=</span> np.<span class="bu">sum</span>(irrigated_crops)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>rainfed_sum_spam <span class="op">=</span> np.<span class="bu">sum</span>(rainfed_crops) <span class="op">-</span> np.<span class="bu">sum</span>(rainfed_s_crops)</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>total_sum_spam <span class="op">=</span> np.<span class="bu">sum</span>(all_crops)</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'This sum of production for irrigation crops in SPAM data ='</span>, irrigation_sum_spam, <span class="st">'tonnes'</span>)</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'This sum of production for rainfed crops in SPAM data ='</span>, rainfed_sum_spam, <span class="st">'tonnes'</span>)</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'This sum of production for all crops in SPAM data ='</span>, total_sum_spam, <span class="st">'tonnes'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>This sum of production for irrigation crops in SPAM data = 552048450.0 tonnes
+This sum of production for rainfed crops in SPAM data = 1386525700.0 tonnes
+This sum of production for all crops in SPAM data = 2037438300.0 tonnes</code></pre>
+</div>
+</div>
+</section>
+<section id="faostat-crop-production-summation" class="level2">
+<h2 class="anchored" data-anchor-id="faostat-crop-production-summation">FAOSTAT Crop Production Summation</h2>
+<div class="cell" data-execution_count="87">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the first couple rows of the df</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(crop_production.head())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Area Code         Area  Item Code                 Item  Element Code   
+0          2  Afghanistan        221  Almonds, with shell          5312  \
+1          2  Afghanistan        221  Almonds, with shell          5312   
+2          2  Afghanistan        221  Almonds, with shell          5312   
+3          2  Afghanistan        221  Almonds, with shell          5312   
+4          2  Afghanistan        221  Almonds, with shell          5312   
+
+          Element  Year Code  Year Unit   Value Flag  
+0  Area harvested       1975  1975   ha     0.0    F  
+1  Area harvested       1976  1976   ha  5900.0    F  
+2  Area harvested       1977  1977   ha  6000.0    F  
+3  Area harvested       1978  1978   ha  6000.0    F  
+4  Area harvested       1979  1979   ha  6000.0    F  </code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="83">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the different element options</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>crop_production[<span class="st">'Element'</span>].unique()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="83">
+<pre><code>array(['Area harvested', 'Yield', 'Production'], dtype=object)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="94">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at units</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>crop_production[<span class="st">'Unit'</span>].unique()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="94">
+<pre><code>array(['ha', 'hg/ha', 'tonnes'], dtype=object)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="88">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the different crop options</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>crop_production[<span class="st">'Item'</span>].unique()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="88">
+<pre><code>array(['Almonds, with shell', 'Anise, badian, fennel, coriander',
+       'Apples', 'Apricots', 'Barley', 'Berries nes', 'Figs',
+       'Fruit, citrus nes', 'Fruit, fresh nes', 'Fruit, stone nes',
+       'Grapes', 'Linseed', 'Maize', 'Melons, other (inc.cantaloupes)',
+       'Millet', 'Nuts nes', 'Olives', 'Onions, dry', 'Oranges',
+       'Peaches and nectarines', 'Pears', 'Pistachios', 'Plums and sloes',
+       'Potatoes', 'Pulses nes', 'Rice, paddy',
+       'Rice, paddy (rice milled equivalent)', 'Seed cotton',
+       'Sesame seed', 'Spices nes', 'Sugar beet', 'Sugar cane',
+       'Sunflower seed', 'Vegetables, fresh nes', 'Walnuts, with shell',
+       'Watermelons', 'Wheat', 'Cereals, Total', 'Citrus Fruit, Total',
+       'Fibre Crops Primary', 'Fruit Primary', 'Oilcrops',
+       'Oilcrops, Cake Equivalent', 'Oilcrops, Oil Equivalent',
+       'Pulses, Total', 'Roots and Tubers, Total', 'Sugar Crops Primary',
+       'Treenuts, Total', 'Vegetables Primary', 'Beans, dry',
+       'Beans, green', 'Broad beans, horse beans, dry',
+       'Cabbages and other brassicas', 'Carrots and turnips',
+       'Cauliflowers and broccoli', 'Cherries', 'Cherries, sour',
+       'Chestnut', 'Chillies and peppers, green',
+       'Cucumbers and gherkins', 'Dates', 'Eggplants (aubergines)',
+       'Garlic', 'Hops', 'Leeks, other alliaceous vegetables',
+       'Lemons and limes', 'Lettuce and chicory',
+       'Mushrooms and truffles', 'Oats', 'Okra',
+       'Onions, shallots, green', 'Peas, green',
+       'Pumpkins, squash and gourds', 'Quinces', 'Rye', 'Sorghum',
+       'Soybeans', 'Spinach', 'Strawberries',
+       'Tangerines, mandarins, clementines, satsumas',
+       'Tobacco, unmanufactured', 'Tomatoes',
+       'Vegetables, leguminous nes', 'Vetches', 'Artichokes', 'Bananas',
+       'Carobs', 'Chick peas', 'Chillies and peppers, dry',
+       'Fruit, tropical fresh nes', 'Grapefruit (inc. pomelos)',
+       'Groundnuts, with shell', 'Lentils', 'Peas, dry', 'Rapeseed',
+       'Triticale', 'Cassava', 'Cocoa, beans', 'Coconuts', 'Maize, green',
+       'Pineapples', 'Taro (cocoyam)', 'Yams', 'Bastfibres, other',
+       'Cashew nuts, with shell', 'Castor oil seed', 'Coffee, green',
+       'Flax fibre and tow', 'Oil palm fruit', 'Sisal', 'Sweet potatoes',
+       'Mangoes, mangosteens, guavas', 'Asparagus', 'Avocados',
+       'Canary seed', 'Cereals nes', 'Fibre crops nes', 'Lupins', 'Maté',
+       'Oilseeds nes', 'Papayas', 'Peppermint', 'Safflower seed',
+       'String beans', 'Tea', 'Tung nuts', 'Hazelnuts, with shell',
+       'Blueberries', 'Cow peas, dry', 'Currants', 'Kiwi fruit',
+       'Mustard seed', 'Persimmons', 'Raspberries', 'Buckwheat',
+       'Gooseberries', 'Grain, mixed', 'Hemp tow waste', 'Poppy seed',
+       'Cranberries', 'Pigeon peas', 'Plantains and others', 'Areca nuts',
+       'Coir', 'Ginger', 'Jute', 'Rubber, natural', 'Sugar crops nes',
+       'Fruit, pome nes', 'Chicory roots', 'Vanilla',
+       'Roots and tubers nes', 'Yautia (cocoyam)', 'Fonio',
+       'Karite nuts (sheanuts)', 'Kola nuts', 'Melonseed',
+       'Pepper (piper spp.)', 'Nutmeg, mace and cardamoms',
+       'Brazil nuts, with shell', 'Pyrethrum, dried', 'Quinoa',
+       'Cashewapple', 'Gums, natural', 'Ramie', 'Cassava leaves',
+       'Hempseed', 'Bambara beans', 'Cinnamon (cannella)', 'Cloves',
+       'Tallowtree seed', 'Agave fibres nes', 'Manila fibre (abaca)',
+       'Kapok fruit', 'Jojoba seed'], dtype=object)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="89">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize list of crops used in MAPSPAM calculation</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>fao_crop_names <span class="op">=</span> [<span class="st">'Wheat'</span>, <span class="st">'Maize'</span>, <span class="st">'Barley'</span>, <span class="st">'Potatoes'</span>, <span class="st">'Seed cotton'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="91">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate total production for the selected crops</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize empty dictionary </span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>fao_summations <span class="op">=</span> {}</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Iterate through all selected crop names</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> crop <span class="kw">in</span> fao_crop_names:</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Set condition that Element is production and Item is one of the selected crops</span></span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>    condition <span class="op">=</span> (crop_production[<span class="st">'Element'</span>] <span class="op">==</span> <span class="st">'Production'</span>) <span class="op">&amp;</span> (crop_production[<span class="st">'Item'</span>] <span class="op">==</span> crop)</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sum rows of the df that meet the condition and add to dictionary</span></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>    fao_summations[crop] <span class="op">=</span> crop_production.loc[condition, <span class="st">'Value'</span>].<span class="bu">sum</span>()</span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a><span class="co"># View dictionary</span></span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(fao_summations)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{'Wheat': 135483572119.0, 'Maize': 140801632812.0, 'Barley': 37176324544.0, 'Potatoes': 81022480691.0, 'Seed cotton': 14243953777.0}</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="97">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at total production results</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>fao_total_production <span class="op">=</span> <span class="bu">sum</span>(fao_summations.values())</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'The total production of the previously selected crops is'</span>, fao_total_production, <span class="st">'tonnes'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>The total production of the previously selected crops is 408727963943.0 tonnes</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="112">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create dict for MAPSPAM all tech production summations </span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>summed_spam_dict <span class="op">=</span> {}</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>,<span class="dv">5</span>):</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>    summed_spam_dict[fao_crop_names[i]] <span class="op">=</span> np.<span class="bu">sum</span>(all_crops[i])</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(summed_spam_dict)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{'Wheat': 666331300.0, 'Maize': 844649300.0, 'Barley': 127393920.0, 'Potatoes': 337903940.0, 'Seed cotton': 61159470.0}</code></pre>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>After comparing the total production from 5 selected crops that are in both MAPSPAM and FAOSTAT crop production data, the MAPSPAM total production for all technologies was 2,037,438,300 tonnes while the equivalent total from FAOSTAT data was 408,727,963,943. The two dominant crops in both datasets were wheat and maize. Also, cotton production had the lowest total tonnage in both datasets among the five crops that I selected.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
