@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Step 1: Download the data and set paths</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="assignment_04_spatial_lasso_assignment_files/libs/clipboard/clipboard.min.js"></script>
+<script src="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/quarto.js"></script>
+<script src="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/popper.min.js"></script>
+<script src="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/anchor.min.js"></script>
+<link href="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="assignment_04_spatial_lasso_assignment_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="assignment_04_spatial_lasso_assignment_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="assignment_04_spatial_lasso_assignment_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="assignment_04_spatial_lasso_assignment_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Step 1: Download the data and set paths</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>This assignment will give you a real (active) research topic that I’ve discussed a little bit in class: predicting carbon storage as a function of high-resolution gridded data. In the class google drive you will find all the data you need in the Soyo_tile folder.</p>
+<p>This assignment will have you use the automated variable selection approach within LASSO to deal with a common situation in regressions on raster-stacks: we have so much data everything is significant but will lead to massive overfitting. The basic approach used here will involve reading in 2d rasters, flattening them into a 1d column ready to add to a dataframe shaped object, which we will use as our X matrix.</p>
+<p>Please turn in the completed Notebook (.ipynb) file that includes the results you generate.</p>
+<p>Below is some starter code along with specific assignment questions.</p>
+<div class="cell" data-execution_count="68">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> osgeo <span class="im">import</span> gdal</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> Lasso</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> statsmodels.api <span class="im">import</span> OLS</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> mean_squared_error, r2_score</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Download the latest data from the class’s google drive. In there, you will need the the files in <code>Data/python_assignment_2</code> data and assign a relative path to the <code>soyo_tile</code> directory in that assignment directory. It is your task to ensure your script runs in the right location and the data is stored in the right location that this relative path works.</p>
+<div class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1 code</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>data_dir <span class="op">=</span> <span class="st">'../../../../data'</span> </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>data_dir <span class="op">=</span> os.path.join(data_dir, <span class="st">'soyo_tile'</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>os.listdir(data_dir)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="17">
+<pre><code>['agb_observed_baccini_2000_30m.tif',
+ 'alt_30s.tif',
+ 'AWCh1_M_sl1_250m.tif',
+ 'BDRICM_M_250m.tif',
+ 'BDRLOG_M_250m.tif',
+ 'BLDFIE_M_sl1_250m.tif',
+ 'CLYPPT_M_sl1_250m.tif',
+ 'CRFVOL_M_sl1_250m.tif',
+ 'data_readme.docx',
+ 'HISTPR_250m.tif',
+ 'OCDENS_M_sl1_250m.tif',
+ 'PHIHOX_M_sl1_250m.tif',
+ 'roughness_30s.tif',
+ 'SLGWRB_250m.tif',
+ 'slope_30s.tif',
+ 'SLTPPT_M_sl1_250m.tif',
+ 'terrain_ruggedness_index_30s.tif',
+ 'TEXMHT_M_sl1_250m.tif',
+ 'wc2.0_bio_30s_01.tif',
+ 'wc2.0_bio_30s_12.tif']</code></pre>
+</div>
+</div>
+<section id="step-2-set-raster-paths" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-set-raster-paths">Step 2: Set raster paths</h2>
+<p>Assign each of the raster paths in the directory to a dictionary for later use. I’ve included most of the code (so you don’t have to waste your time typing), but add in the missing paths.</p>
+<div class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2 code</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>raster_paths <span class="op">=</span> {}</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># First is the dependent varable, Above Ground Carbon (AGB) in tons, measured at 30 meters globally (here it is clipped to a smaller area)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'agb_observed_baccini_2000_30m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"agb_observed_baccini_2000_30m.tif"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Here are some of the independent variables</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'CRFVOL_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"CRFVOL_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'HISTPR_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"HISTPR_250m.tif"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'OCDENS_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"OCDENS_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'PHIHOX_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"PHIHOX_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'roughness_30s'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"roughness_30s.tif"</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'SLGWRB_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"SLGWRB_250m.tif"</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'SLTPPT_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"SLTPPT_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'terrain_ruggedness_index_30s'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"terrain_ruggedness_index_30s.tif"</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'TEXMHT_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"TEXMHT_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'wc2.0_bio_30s_01'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"wc2.0_bio_30s_01.tif"</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'alt_30s'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"alt_30s.tif"</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'AWCh1_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"AWCh1_M_sl1_250m.tif"</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'BDRICM_M_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"BDRICM_M_250m.tif"</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'BDRLOG_M_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"BDRLOG_M_250m.tif"</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>raster_paths[<span class="st">'BLDFIE_M_sl1_250m'</span>] <span class="op">=</span> os.path.join(data_dir, <span class="st">"BLDFIE_M_sl1_250m.tif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="step-3-open-the-rasters" class="level2">
+<h2 class="anchored" data-anchor-id="step-3-open-the-rasters">Step 3: Open the rasters</h2>
+<p>Our dependent variable will be 30 meter observations of carbon storage from Baccini et al.&nbsp;(unpublished, but soon to be published) data. The label I assigned in the dictionary above was agb_observed_baccini_2000_30m for this variable. Use gdal.Open, GetRasterBand(1) and ReadAsArray() to read this geotiff as a numpy file</p>
+<p>Side note: If you get an error like: “ERROR 4: This is a BigTIFF file. BigTIFF is not supported by this version of GDAL and libtiff.” make sure you have installed gdal with the mamba method from lecture 1.</p>
+<div class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3 code</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Save Y variable file to variable</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> raster_paths[<span class="st">'agb_observed_baccini_2000_30m'</span>]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Open file</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>y_rast <span class="op">=</span> gdal.Open(y)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Get band 1</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>y_band <span class="op">=</span> y_rast.GetRasterBand(<span class="dv">1</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert band to array</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>y_arr <span class="op">=</span> y_band.ReadAsArray()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(y_arr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[123 122  75 ... 130 128 125]
+ [125 124 124 ... 121 130 124]
+ [125 128 126 ... 124 124 126]
+ ...
+ [  0   0   0 ... 155 136 143]
+ [  0   0   0 ... 135 132 198]
+ [  0   0   0 ... 135 123 119]]</code></pre>
+</div>
+</div>
+</section>
+<section id="step-4-define-some-arrays" class="level2">
+<h2 class="anchored" data-anchor-id="step-4-define-some-arrays">Step 4: Define some arrays</h2>
+<p>Create an empty numpy array (or full of zeros) of the right shape to house all our raster data. A very CPU-efficient way of arranging a stack of 2d rasters (which would be 3d once stacked up), is to flatten each 2d raster into a longer 1d array. This will go into our X matrix. In order to create the right sized X matrix, first get the n_obs and n_vars by inspecting the dependent variable raster and the dictionary of inputs above. Note that the n_vars should be the number of independent AND dependent variables.</p>
+<div class="cell" data-execution_count="43">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4 code</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler  <span class="co"># Example usage of scikit-learn</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize counters</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>n_obs <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>n_vars <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Iterate through TIFF files</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> key, file_path <span class="kw">in</span> raster_paths.items():</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Read TIFF file using GDAL</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    dataset <span class="op">=</span> gdal.Open(file_path)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get information from the dataset</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    observations <span class="op">=</span> dataset.RasterYSize</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    variables <span class="op">=</span> dataset.RasterCount</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Accumulate counts</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    n_obs <span class="op">+=</span> observations</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    n_vars <span class="op">+=</span> variables</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Additional processing using scikit-learn (example: standard scaling)</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    data_arr <span class="op">=</span> np.array(dataset.ReadAsArray())</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    scaled_data <span class="op">=</span> scaler.fit_transform(data_arr)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Close the dataset</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    dataset <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>n_obs <span class="co"># number of obs before flattening...</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>total_obs <span class="op">=</span> n_obs <span class="op">*</span> <span class="dv">125</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Print or use the accumulated counts</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Number of Observations: </span><span class="sc">{</span>total_obs<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Number of Variables: </span><span class="sc">{</span>n_vars<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of Observations: 4000000
+Number of Variables: 16</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="44">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tuple of shape: obs x vars</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>shape <span class="op">=</span> (total_obs, n_vars)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create empty array</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>data_array <span class="op">=</span> np.zeros(shape)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>(4000000, 16)</code></pre>
+</div>
+</div>
+</section>
+<section id="step-5-load-all-the-independent-variables" class="level2">
+<h2 class="anchored" data-anchor-id="step-5-load-all-the-independent-variables">Step 5: Load all the independent variables</h2>
+<ul>
+<li>Iterate through the dictionary and load each raster as a 2d array</li>
+<li>flatten it to 1d using the .flatten() method in numpy</li>
+<li>Assign this 1d array to the correct column of the data array. By convention, the depvar will be the first column.</li>
+</ul>
+<p>Hint, assuming you have arranged your X array in the correct way, it should have observations (pixels) as rows and variables as cols. Given that each flattened array is for one variable and is as long as there are rows, a convenient way of assigning it would be to use numpy slice notation, potentially similar to:</p>
+<p><code>data_array[:, column_index_integer]</code></p>
+<p>The first colon just denotes the whole row and the column index is an integer you could create pointing to the right row.</p>
+<p>Some incomplete code to get you started is below.</p>
+<div class="cell" data-execution_count="108">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5 code</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>col_index <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>feature_names <span class="op">=</span> []</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Iterate through all raster files in dictionary</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> name, path <span class="kw">in</span> raster_paths.items():</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">'Loading'</span>, path)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Open file</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    rast <span class="op">=</span> gdal.Open(path)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    band <span class="op">=</span> rast.GetRasterBand(<span class="dv">1</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    flattened_raster_array <span class="op">=</span> band.ReadAsArray().flatten()</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(np.unique(flattened_raster_array))</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">'Populating column'</span>, col_index)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    data_array[:, col_index] <span class="op">=</span> flattened_raster_array</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    feature_names.append(name)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    col_index <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Close file</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    rast <span class="op">=</span> <span class="va">None</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loading ../../../../data\soyo_tile\agb_observed_baccini_2000_30m.tif
+Populating column 0
+Loading ../../../../data\soyo_tile\CRFVOL_M_sl1_250m.tif
+Populating column 1
+Loading ../../../../data\soyo_tile\HISTPR_250m.tif
+Populating column 2
+Loading ../../../../data\soyo_tile\OCDENS_M_sl1_250m.tif
+Populating column 3
+Loading ../../../../data\soyo_tile\PHIHOX_M_sl1_250m.tif
+Populating column 4
+Loading ../../../../data\soyo_tile\roughness_30s.tif
+Populating column 5
+Loading ../../../../data\soyo_tile\SLGWRB_250m.tif
+Populating column 6
+Loading ../../../../data\soyo_tile\SLTPPT_M_sl1_250m.tif
+Populating column 7
+Loading ../../../../data\soyo_tile\terrain_ruggedness_index_30s.tif
+Populating column 8
+Loading ../../../../data\soyo_tile\TEXMHT_M_sl1_250m.tif
+Populating column 9
+Loading ../../../../data\soyo_tile\wc2.0_bio_30s_01.tif
+Populating column 10
+Loading ../../../../data\soyo_tile\alt_30s.tif
+Populating column 11
+Loading ../../../../data\soyo_tile\AWCh1_M_sl1_250m.tif
+Populating column 12
+Loading ../../../../data\soyo_tile\BDRICM_M_250m.tif
+Populating column 13
+Loading ../../../../data\soyo_tile\BDRLOG_M_250m.tif
+Populating column 14
+Loading ../../../../data\soyo_tile\BLDFIE_M_sl1_250m.tif
+Populating column 15</code></pre>
+</div>
+</div>
+</section>
+<section id="step-6" class="level1">
+<h1>Step 6:</h1>
+<p>Extract the first array row of the data_array and assign it to y. Assign the rest to X.</p>
+<div class="cell" data-execution_count="87">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6 code</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> data_array[:, <span class="dv">0</span>]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> data_array[:, <span class="dv">1</span>:]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="step-7" class="level1">
+<h1>Step 7:</h1>
+<p>Split the X and y into testing and training data such that the training data is the first million pixels and the testing data is the next 200,000. Do this using numpy slice notation on the X and y variables you created.</p>
+<div class="cell" data-execution_count="89">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 7 code</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>train_obs <span class="op">=</span> <span class="dv">1000000</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>test_obs <span class="op">=</span> <span class="dv">2000000</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>y_train <span class="op">=</span> y[<span class="dv">0</span>:train_obs]</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> x[<span class="dv">0</span>:train_obs, :]</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>y_test <span class="op">=</span> y[train_obs<span class="op">+</span><span class="dv">1</span>:train_obs<span class="op">+</span><span class="dv">1</span><span class="op">+</span>test_obs]</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>X_test <span class="op">=</span> x[train_obs<span class="op">+</span><span class="dv">1</span>:train_obs<span class="op">+</span><span class="dv">1</span><span class="op">+</span>test_obs, :]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="step-8-optional-but-useful" class="level1">
+<h1>Step 8 (optional but useful):</h1>
+<p>To make the code run faster, we are going to use every 10th pixel. We can easily get this via numpy slicing again, using x_train[::10] to get every 10th pixel.</p>
+<div class="cell" data-execution_count="90">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 8 code</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>y_train[::<span class="dv">10</span>]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>X_train[::<span class="dv">10</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="90">
+<pre><code>array([[-1.000e+00,  7.000e+00,  1.750e+02, ...,  2.000e+02,  1.000e+00,
+         1.436e+03],
+       [-1.000e+00,  6.000e+00,  1.680e+02, ...,  2.000e+02, -1.000e+00,
+         1.390e+03],
+       [-1.000e+00,  6.000e+00,  1.690e+02, ...,  2.000e+02, -1.000e+00,
+         1.377e+03],
+       ...,
+       [-1.000e+00,  2.000e+00,  1.200e+02, ...,  2.000e+02, -1.000e+00,
+         1.359e+03],
+       [-1.000e+00,  1.000e+00,  1.210e+02, ...,  2.000e+02,  3.000e+00,
+         1.368e+03],
+       [-1.000e+00,  1.000e+00,  1.230e+02, ...,  2.000e+02,  2.000e+00,
+         1.365e+03]])</code></pre>
+</div>
+</div>
+</section>
+<section id="step-9" class="level1">
+<h1>Step 9:</h1>
+<p>Create a Lasso object (using the default penalty term alpha) and fit it to the training data. Create and print out a vector of predicted carbon values. Also print out the score using the lasso object’s .score() method on the TESTING data. Print out the fitted lasso score.</p>
+<div class="cell" data-execution_count="92">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 9 code</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create Lasso object</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>model_lasso <span class="op">=</span> Lasso(alpha<span class="op">=</span><span class="fl">1.0</span>, random_state<span class="op">=</span><span class="dv">0</span>, max_iter<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>y_train_hat_lasso <span class="op">=</span> model_lasso.fit(X_train, y_train)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Prediction</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> model_lasso.predict(X_test)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co"># View score</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(y_train_hat_lasso.score(X_test, y_test))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>-0.6206354561350587</code></pre>
+</div>
+</div>
+</section>
+<section id="step-10-optional-and-just-for-fun." class="level1">
+<h1>Step 10, optional and just for fun:.</h1>
+<p>To view how our projections LOOK, we can create a predicted matrix on the whole X, reshape it back into the original 2d shape and look at it. You can compare this to the input array to visualize how it looks. Note that this will only work if you name your objects like mine.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 10 code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="step-11" class="level1">
+<h1>Step 11:</h1>
+<p>Create a list of 30 alphas using <code>np.logspace(-1, 3, 30)</code>.</p>
+<p>Using a for loop iterate over those alphas and run the Lasso model like above, but using the alpha values in the loop. Print out the fit score at each step. Using matplotlib, plot how this value changes as alpha changes. Finally, extract the best alpha of the bunch.</p>
+<div class="cell" data-execution_count="93">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 11 code </span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define dict for scores</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> {}</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create list of alphas</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>alpha_list <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">30</span>)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> alpha <span class="kw">in</span> alpha_list:</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    model_lasso <span class="op">=</span> Lasso(alpha<span class="op">=</span>alpha, random_state<span class="op">=</span><span class="dv">0</span>, max_iter<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    model_lasso.fit(X_train, y_train)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    y_train_hat_lasso <span class="op">=</span> model_lasso.predict(X_train)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    r2 <span class="op">=</span> r2_score(y_train, y_train_hat_lasso)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    scores[alpha] <span class="op">=</span> r2</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">'Alpha'</span>, alpha, <span class="st">'r2'</span>, r2)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick way to get the value from the highest-valued dictionary entry</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>best_alpha <span class="op">=</span> <span class="bu">max</span>(scores, key<span class="op">=</span>scores.get)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="co"># print best_alpha with all the significant digits</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'best_alpha'</span>, best_alpha)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Alpha 0.1 r2 0.5982431818702818
+Alpha 0.1373823795883263 r2 0.5982334402077794
+Alpha 0.18873918221350972 r2 0.5982150585809618
+Alpha 0.2592943797404667 r2 0.5981803688109031
+Alpha 0.3562247890262442 r2 0.5981149063933093
+Alpha 0.4893900918477494 r2 0.5979913851526988
+Alpha 0.6723357536499337 r2 0.5977583109386742
+Alpha 0.9236708571873861 r2 0.5973185454245731
+Alpha 1.2689610031679222 r2 0.5966023395706236
+Alpha 1.743328822199988 r2 0.5955545906682953
+Alpha 2.395026619987486 r2 0.5935772330613508
+Alpha 3.2903445623126677 r2 0.5909188740445962
+Alpha 4.520353656360243 r2 0.5869388552262478
+Alpha 6.2101694189156165 r2 0.5815217217094848
+Alpha 8.531678524172806 r2 0.5742088714076911
+Alpha 11.721022975334806 r2 0.5601688305647465
+Alpha 16.102620275609393 r2 0.5450560435191583
+Alpha 22.12216291070448 r2 0.5267189999009059
+Alpha 30.39195382313198 r2 0.49211325069337974
+Alpha 41.753189365604 r2 0.47668292076468355
+Alpha 57.361525104486816 r2 0.4576181163301888
+Alpha 78.80462815669912 r2 0.4279517694326227
+Alpha 108.2636733874054 r2 0.42659602820885656
+Alpha 148.73521072935117 r2 0.42403745364302314
+Alpha 204.33597178569417 r2 0.41920830178600843
+Alpha 280.72162039411756 r2 0.4100937477485509
+Alpha 385.6620421163472 r2 0.3928909411246947
+Alpha 529.8316906283708 r2 0.36042334771518725
+Alpha 727.8953843983146 r2 0.31307074667780377
+Alpha 1000.0 r2 0.25760111433458666
+best_alpha 0.1</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="98">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot results</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>plt.plot(alpha_list, <span class="bu">list</span>(scores.values()), marker<span class="op">=</span><span class="st">'o'</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>plt.xscale(<span class="st">'log'</span>)  <span class="co"># Set x-axis to a logarithmic scale for better visualization</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'Alpha (Hyper parameter)'</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'R-squared Score'</span>)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Alpha Sensitivity Analysis for Lasso Regression'</span>)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="assignment_04_spatial_lasso_assignment_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+<section id="step-12" class="level1">
+<h1>Step 12:</h1>
+<p>Rerun the lasso with that best value and identify all of the coefficiencts that were “selected” ie had non-zero values. Save these coefficient indices and labels to a list.</p>
+<div class="cell" data-execution_count="110">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 12 code</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create Lasso object with best alpha</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>model_lasso <span class="op">=</span> Lasso(alpha<span class="op">=</span>best_alpha, random_state<span class="op">=</span><span class="dv">0</span>, max_iter<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>y_train_hat_lasso <span class="op">=</span> model_lasso.fit(X_train, y_train)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine coefficients with their labels</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>coef_dict <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(feature_names, y_train_hat_lasso.coef_))</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at coefficients</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="co"># print("coefficients", coef_dict)</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>select_coef <span class="op">=</span> []</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Append non-zero coefs to list</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> var, coef <span class="kw">in</span> coef_dict.items():</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> coef <span class="op">&gt;</span> <span class="fl">0.01</span> <span class="kw">or</span> coef <span class="op">&lt;</span> <span class="op">-</span><span class="fl">0.01</span>:</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>        select_var.append((var, coef))</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="co"># View selected variables</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(select_var)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[('agb_observed_baccini_2000_30m', 1.1178444698633947), ('CRFVOL_M_sl1_250m', 3.6360303928262097), ('HISTPR_250m', 0.16851979492088145), ('OCDENS_M_sl1_250m', -7.1471066964145455), ('PHIHOX_M_sl1_250m', -0.04126857194753525), ('SLGWRB_250m', -0.048912276352112996), ('SLTPPT_M_sl1_250m', 0.4634661148714579), ('terrain_ruggedness_index_30s', -7.29404906078129), ('TEXMHT_M_sl1_250m', 2.2788866910504546), ('alt_30s', -3.0865771042501655), ('AWCh1_M_sl1_250m', 4.6483241969421), ('BDRICM_M_250m', 1.4994179044019034), ('BDRLOG_M_250m', -0.3267967876895696)]</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="113">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>selected_coefficient_labels <span class="op">=</span> []</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>selected_coefficient_indices <span class="op">=</span> []</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(y_train_hat_lasso.coef_)):</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">'Coefficient'</span>, feature_names[i], <span class="st">'was'</span>, y_train_hat_lasso.coef_[i])</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">abs</span>(y_train_hat_lasso.coef_[i]) <span class="op">&gt;</span> <span class="fl">0.1</span>:</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>        selected_coefficient_labels.append(feature_names[i])</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>        selected_coefficient_indices.append(i)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'The selected variables are:'</span>, (selected_coefficient_labels, selected_coefficient_indices))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coefficient agb_observed_baccini_2000_30m was 1.1178444698633947
+Coefficient CRFVOL_M_sl1_250m was 3.6360303928262097
+Coefficient HISTPR_250m was 0.16851979492088145
+Coefficient OCDENS_M_sl1_250m was -7.1471066964145455
+Coefficient PHIHOX_M_sl1_250m was -0.04126857194753525
+Coefficient roughness_30s was -0.0
+Coefficient SLGWRB_250m was -0.048912276352112996
+Coefficient SLTPPT_M_sl1_250m was 0.4634661148714579
+Coefficient terrain_ruggedness_index_30s was -7.29404906078129
+Coefficient TEXMHT_M_sl1_250m was 2.2788866910504546
+Coefficient wc2.0_bio_30s_01 was -0.0060665072378508385
+Coefficient alt_30s was -3.0865771042501655
+Coefficient AWCh1_M_sl1_250m was 4.6483241969421
+Coefficient BDRICM_M_250m was 1.4994179044019034
+Coefficient BDRLOG_M_250m was -0.3267967876895696
+The selected variables are: (['agb_observed_baccini_2000_30m', 'CRFVOL_M_sl1_250m', 'HISTPR_250m', 'OCDENS_M_sl1_250m', 'SLTPPT_M_sl1_250m', 'terrain_ruggedness_index_30s', 'TEXMHT_M_sl1_250m', 'alt_30s', 'AWCh1_M_sl1_250m', 'BDRICM_M_250m', 'BDRLOG_M_250m'], [0, 1, 2, 3, 7, 8, 9, 11, 12, 13, 14])</code></pre>
+</div>
+</div>
+</section>
+<section id="step-13" class="level1">
+<h1>Step 13:</h1>
+<p>Using Statsmodels, run an OLS version on the selected variables.</p>
+<p>Use print to show the results table.</p>
+<p>Write a description of any advantages this approach has over vanilla OLS.</p>
+<div class="cell" data-execution_count="121">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 13 code</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Select training data</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>X_train_selected <span class="op">=</span> X_train[:, selected_coefficient_indices]</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit OLS model</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> OLS(y_train, X_train_selected)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> model.fit()</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Print summary statistics</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results.summary())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:                      y   R-squared (uncentered):                   0.875
+Model:                            OLS   Adj. R-squared (uncentered):              0.875
+Method:                 Least Squares   F-statistic:                          6.376e+05
+Date:                Mon, 11 Dec 2023   Prob (F-statistic):                        0.00
+Time:                        04:07:26   Log-Likelihood:                     -5.1483e+06
+No. Observations:             1000000   AIC:                                  1.030e+07
+Df Residuals:                  999989   BIC:                                  1.030e+07
+Df Model:                          11                                                  
+Covariance Type:            nonrobust                                                  
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+x1             1.1199      0.023     48.077      0.000       1.074       1.166
+x2             3.8115      0.029    132.106      0.000       3.755       3.868
+x3             0.1670      0.001    128.731      0.000       0.164       0.170
+x4            -7.1012      0.023   -306.458      0.000      -7.147      -7.056
+x5             0.3895      0.004     97.441      0.000       0.382       0.397
+x6            -7.3750      0.033   -223.212      0.000      -7.440      -7.310
+x7             2.2471      0.040     56.313      0.000       2.169       2.325
+x8            -3.3331      0.055    -60.698      0.000      -3.441      -3.225
+x9             4.6258      0.012    389.185      0.000       4.603       4.649
+x10            1.5018      0.014    105.600      0.000       1.474       1.530
+x11           -0.3272      0.002   -211.125      0.000      -0.330      -0.324
+==============================================================================
+Omnibus:                    51127.287   Durbin-Watson:                   0.393
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):            66135.428
+Skew:                           0.510   Prob(JB):                         0.00
+Kurtosis:                       3.739   Cond. No.                     1.87e+03
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[3] The condition number is large, 1.87e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.</code></pre>
+</div>
+</div>
+<section id="advantages-over-vanilla-ols" class="level2">
+<h2 class="anchored" data-anchor-id="advantages-over-vanilla-ols">Advantages over vanilla OLS</h2>
+<p>Thanks to the penalization of unimportant variables, lasso regressions are great for variable control. This allows for a stream-lined way to perform variable selection. Relately, the variable selection done through lasso regressions could help solve multicollinearity problems. Lastly, the penalization term helps prevent overfitting by punishing models that are overly complex while vanilla OLS could allow overfitting to go undetected.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
